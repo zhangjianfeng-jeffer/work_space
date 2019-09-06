@@ -40,7 +40,7 @@ public class HttpsUtils {
         }
     }
  
-    private static HttpsURLConnection getHttpsURLConnection(String uri, String method,boolean isVerify) throws IOException {
+    public static HttpsURLConnection getHttpsURLConnection(String uri, String method,boolean isVerify) throws IOException {
         SSLContext ctx = null;
         try {
             ctx = SSLContext.getInstance("TLS");
