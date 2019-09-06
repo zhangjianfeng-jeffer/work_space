@@ -11,6 +11,11 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.yolo.common.utils.StringUtils;
 
+/**
+ * 逻辑运算器
+ * @author jeffer
+ *
+ */
 public class LogicalOperationUtils {
 
 	private static Logger logger = LoggerFactory.getLogger(LogicalOperationUtils.class);

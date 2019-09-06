@@ -1,5 +1,10 @@
 package com.yolo.common.utils.logical;
 
+/**
+ * 逻辑运算器返回结果
+ * @author user
+ *
+ */
 public class LogicalResult {
 
 	private boolean success;
