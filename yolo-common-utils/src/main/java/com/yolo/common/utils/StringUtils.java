@@ -3,6 +3,11 @@ package com.yolo.common.utils;
 public class StringUtils {
 	
 	
+	/**
+	 * 是否为空
+	 * @param str
+	 * @return
+	 */
 	public static boolean isBlank(String str) {
         int strLen;
         if (str == null || (strLen = str.length()) == 0) {
@@ -17,12 +22,22 @@ public class StringUtils {
     }
 
     
+    /**
+     * 是否不为空
+     * @param str
+     * @return
+     */
     public static boolean isNotBlank(String str) {
         return !StringUtils.isBlank(str);
     }
 
     
     
+    /**
+     * 字符串转换(userId ------> USER_ID)
+     * @param paramName
+     * @return
+     */
     public static String getFieldNameByParamName(String paramName){
 		StringBuffer strB=new StringBuffer();
 		if(paramName!=null&&paramName.length()>0){
@@ -39,6 +54,11 @@ public class StringUtils {
 		return strB.toString();
 	}
 	
+	/**
+	 * 字符串转换(USER_ID ------> userId)
+	 * @param fieldName
+	 * @return
+	 */
 	public static String getParamNameByFieldName(String fieldName){
 		StringBuffer strB=new StringBuffer();
 		if(fieldName!=null&&fieldName.length()>0){
@@ -64,6 +84,11 @@ public class StringUtils {
 	}
 	
 	
+	/**
+	 * 字符首个字符为字母转换为小写字母
+	 * @param value
+	 * @return
+	 */
 	public static String toLowerCaseFirst(String value){
 		if(value==null||value.length()<=0){
 			return value;
@@ -82,6 +107,11 @@ public class StringUtils {
 		return strB.toString();
 	}
 	
+	/**
+	 * 字符首个字符为字母转换为大写字母
+	 * @param value
+	 * @return
+	 */
 	public static String toUpperCaseFirst(String value){
 		if(value==null||value.length()<=0){
 			return value;
