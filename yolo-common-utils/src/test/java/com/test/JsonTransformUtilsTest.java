@@ -27,15 +27,12 @@ public class JsonTransformUtilsTest {
 		a.setUserList(list);
 		
 		
+		long time = System.currentTimeMillis();
 		String json = JsonTransformUtils.transformToString(a);
-		
-		
-		System.out.println(json);
-		
+		System.out.println(System.currentTimeMillis() - time);
+		System.out.println(json.length()+"=="+json);
 		MyTest d = (MyTest)JsonTransformUtils.transformToObject(json);
-		System.out.println("d=="+JSON.toJSONString(d));
-		
-		
+		System.out.println(System.currentTimeMillis() - time);
 		
 	}
 	

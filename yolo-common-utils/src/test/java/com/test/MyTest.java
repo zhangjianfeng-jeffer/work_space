@@ -35,4 +35,12 @@ public class MyTest {
 	public void setUserList(List<MyTest> userList) {
 		this.userList = userList;
 	}
+
+	@Override
+	public String toString() {
+		return "MyTest [id=" + id + ", name=" + name + ", userList=" + userList
+				+ "]";
+	}
+	
+	
 }

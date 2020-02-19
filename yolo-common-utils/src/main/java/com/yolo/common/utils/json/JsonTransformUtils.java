@@ -32,29 +32,91 @@ public class JsonTransformUtils {
 		Object result = null;
 		if(StringUtils.isNotBlank(jsonStr)){
 			JSONObject jsonOject=new JSONObject(jsonStr);
-			JsonValueObject jsonValueObject=convertJsonValueObject(jsonOject);
-			result=JsonTransformUtils.convertObject(jsonValueObject);
+			result = convertObjectMain(jsonOject);		
 		}
 		return result;
 	}
 	
 	
 	public static String transformToString(Object obj)throws Exception{
-		JsonValueObject jsonValueObject = JsonTransformUtils.toJsonValueObject(obj);
-		JSONObject jsonOject=new JSONObject(jsonValueObject);
-		return jsonOject.toString();
+		String result = null;
+		JSONObject jsonOject = JsonTransformUtils.toJsonValueObjectMain(obj);
+		if(jsonOject!=null){
+			result = jsonOject.toString();
+		}
+		return result;
+	}
+	
+	public static Object convertObjectMain(JSONObject jsonOject)throws Exception{
+		Object result = null;
+		if(jsonOject!=null){
+			JSONObject objectValue = jsonOject.getJSONObject("objectValue");
+			JSONObject typeValueMap = jsonOject.getJSONObject("typeValueMap");
+			if(objectValue!=null && typeValueMap !=null){
+				TypeValue typeValue = new TypeValue();
+				JsonValueObject typeValueMapJsonValue=convertJsonValueObject(typeValueMap,typeValue);
+				Map<String,String> typeValueMapNew = getTypeValueMap(typeValueMapJsonValue);
+				typeValue.addTypeValueMap(typeValueMapNew);
+				JsonValueObject objectValueJsonValue=convertJsonValueObject(objectValue,typeValue);
+				result=JsonTransformUtils.convertObject(objectValueJsonValue);
+			}
+		}
+		return result;
+	}
+	
+	private static Map<String,String> getTypeValueMap(JsonValueObject typeValueMap){
+		Map<String,String> result = null;
+		if(typeValueMap!=null){
+			@SuppressWarnings("unchecked")
+			Map<JsonValueObject,JsonValueObject> map=(Map<JsonValueObject,JsonValueObject>)typeValueMap.getV();
+			if(map!=null){
+				result = new HashMap<String, String>();
+				Iterator<JsonValueObject> it = map.keySet().iterator();
+				while(it.hasNext()){
+					JsonValueObject key = it.next();
+					JsonValueObject value = map.get(key);
+					String keyValue = getJsonValueObjectValue(key);
+					String valueValue = getJsonValueObjectValue(value);
+					result.put(keyValue,valueValue);
+				}
+			}
+		}
+		return result;
+	}
+	
+	private static String getJsonValueObjectValue(JsonValueObject bean){
+		String value = null;
+		if(bean!=null){
+			Object obj = bean.getV();
+			if(obj!=null){
+				value = obj.toString();
+			}
+		}
+		return value;
 	}
 	
 	
+	public static JSONObject toJsonValueObjectMain(Object value)throws Exception{
+		TypeValue typeValue = new TypeValue();
+		JsonValueObject jsonValueObject = JsonTransformUtils.toJsonValueObject(value,typeValue);
+		Map<String,String> map = typeValue.getTypeValueMap();
+		JsonValueObject typeMapJSON = toJsonValueObject(map,new TypeValue());
+		JSONObject jsonValueObjectJson = new JSONObject(jsonValueObject);
+		JSONObject typeMapJSONJson = new JSONObject(typeMapJSON);
+		JSONObject result = new JSONObject();
+		result.put("objectValue", jsonValueObjectJson);
+		result.put("typeValueMap", typeMapJSONJson);
+		return result;
+	}
 	
 	
-	public static JsonValueObject toJsonValueObject(Object value)throws Exception{
+	public static JsonValueObject toJsonValueObject(Object value,TypeValue typeValue)throws Exception{
 		JsonValueObject result=null;
-		if(value!=null){
+		if(value!=null && typeValue!=null){
 			Class<?> clas=value.getClass();
-			result=new JsonValueObject();
 			String type=clas.getName();
-			result.setT(transformTypeToValue(type));
+			result=new JsonValueObject();
+			result.setT(transformTypeToValue(type,typeValue));
 			
 			if(type.indexOf("[L")==0){
 				Object[] array=(Object[])value;
@@ -62,7 +124,7 @@ public class JsonTransformUtils {
 				for (int i = 0; i < array.length; i++) {
 					Object obj=array[i];
 					if(obj!=null){
-						JsonValueObject valueObj=toJsonValueObject(obj);
+						JsonValueObject valueObj=toJsonValueObject(obj,typeValue);
 						if(valueObj!=null){
 							valueList.add(valueObj);
 						}
@@ -75,7 +137,7 @@ public class JsonTransformUtils {
 				List<?> list=(List<?>)value;
 				List<JsonValueObject> valueList=new ArrayList<JsonValueObject>();
 				for (Object obj : list) {
-					JsonValueObject valueObj=toJsonValueObject(obj);
+					JsonValueObject valueObj=toJsonValueObject(obj,typeValue);
 					if(valueObj!=null){
 						valueList.add(valueObj);
 					}
@@ -90,8 +152,8 @@ public class JsonTransformUtils {
 				while (it.hasNext()) {
 					Object key=it.next();
 					Object valueObject=map.get(key);
-					JsonValueObject jObjK=toJsonValueObject(key);
-					JsonValueObject jObjV=toJsonValueObject(valueObject);
+					JsonValueObject jObjK=toJsonValueObject(key,typeValue);
+					JsonValueObject jObjV=toJsonValueObject(valueObject,typeValue);
 					
 					if(jObjK!=null && jObjV!=null){
 						JSONObject jsonOjectKey=new JSONObject(jObjK);
@@ -118,7 +180,7 @@ public class JsonTransformUtils {
 								String fieldName=field.getName();
 								Method methodGet = ModleClassManager.getMethodGet(clas, fieldName);
 								if(methodGet!=null && Modifier.isPublic(methodGet.getModifiers())){
-									JsonValueObject jObjV=toJsonValueObject(fieldValue);
+									JsonValueObject jObjV=toJsonValueObject(fieldValue,typeValue);
 									if(jObjV!=null){
 										valueMap.put(fieldName ,jObjV);
 									}
@@ -221,12 +283,12 @@ public class JsonTransformUtils {
 	}
 	
 	
-	public static JsonValueObject convertJsonValueObject(JSONObject jsonOject)throws Exception{
+	public static JsonValueObject convertJsonValueObject(JSONObject jsonOject,TypeValue typeValue)throws Exception{
 		JsonValueObject result=null;
 		if(jsonOject!=null){
 			if(jsonOject.has("t") && jsonOject.has("v")){
 				String type = jsonOject.getString("t");
-				type=transformValueToType(type);
+				type=transformValueToType(type,typeValue);
 				if(StringUtils.isNotBlank(type)){
 					result = new JsonValueObject();
 					result.setT(type);
@@ -246,7 +308,7 @@ public class JsonTransformUtils {
 								list = new ArrayList<JsonValueObject>();
 								for (int i = 0; i < value.length(); i++) {
 									JSONObject json=value.getJSONObject(i);
-									JsonValueObject jsonValue=convertJsonValueObject(json);
+									JsonValueObject jsonValue=convertJsonValueObject(json,typeValue);
 									if(jsonValue!=null){
 										list.add(jsonValue);
 									}
@@ -262,7 +324,7 @@ public class JsonTransformUtils {
 									list = new ArrayList<JsonValueObject>();
 									for (int i = 0; i < value.length(); i++) {
 										JSONObject json=value.getJSONObject(i);
-										JsonValueObject jsonValue=convertJsonValueObject(json);
+										JsonValueObject jsonValue=convertJsonValueObject(json,typeValue);
 										if(jsonValue!=null){
 											list.add(jsonValue);
 										}
@@ -280,8 +342,8 @@ public class JsonTransformUtils {
 										JSONObject jsonKeyVal=value.getJSONObject(jsonKey);
 										
 										JSONObject jsonOjectKey=new JSONObject(jsonKey);
-										JsonValueObject jvk=convertJsonValueObject(jsonOjectKey);
-										JsonValueObject jvv=convertJsonValueObject(jsonKeyVal);
+										JsonValueObject jvk=convertJsonValueObject(jsonOjectKey,typeValue);
+										JsonValueObject jvv=convertJsonValueObject(jsonKeyVal,typeValue);
 										if(jvk!=null && jvv!=null){
 											map.put(jvk, jvv);
 										}
@@ -299,7 +361,7 @@ public class JsonTransformUtils {
 									while(it.hasNext()){
 										String feildName=it.next();
 										JSONObject feildVal=value.getJSONObject(feildName);
-										JsonValueObject jvv=convertJsonValueObject(feildVal);
+										JsonValueObject jvv=convertJsonValueObject(feildVal,typeValue);
 										if(jvv!=null){
 											map.put(feildName, jvv);
 										}
@@ -370,7 +432,7 @@ public class JsonTransformUtils {
 			}else if(clas.equals(String.class)){
 				result=value;
 			}else if(clas.equals(Date.class)){
-				result=DateTimeUtils.dateFormatString((Date)value, DateTimeUtils.FORMAT_Y_M_D_H_M_S_S_1);
+				result=DateTimeUtils.dateFormatString((Date)value, DateTimeUtils.FormatType.FORMAT_Y_M_D_H_M_S_S_1);
 			}else if(clas.equals(BigDecimal.class)){
 				result=value.toString();
 			}
@@ -401,7 +463,7 @@ public class JsonTransformUtils {
 			}else if(type.equals(String.class.getName())){
 				result=value;
 			}else if(type.equals(Date.class.getName())){
-				result=DateTimeUtils.stringFormatDate(value, DateTimeUtils.FORMAT_Y_M_D_H_M_S_S_1);
+				result=DateTimeUtils.stringFormatDate(value, DateTimeUtils.FormatType.FORMAT_Y_M_D_H_M_S_S_1);
 			}else if(type.equals(BigDecimal.class.getName())){
 				result=new BigDecimal(value);
 			}
@@ -410,63 +472,137 @@ public class JsonTransformUtils {
 	}
 	
 	
-	private static Map<String,String> mapTypeValue;
-	private static Map<String,String> mapValueType;
 	
-	private synchronized static void initMap(){
-		if(mapTypeValue==null){
-			mapTypeValue=new HashMap<String, String>();
-			mapTypeValue.put(byte.class.getName(), Integer.toString(1));
-			mapTypeValue.put(Byte.class.getName(), Integer.toString(2));
-			mapTypeValue.put(boolean.class.getName(), Integer.toString(3));
-			mapTypeValue.put(Boolean.class.getName(), Integer.toString(4));
-			mapTypeValue.put(int.class.getName(), Integer.toString(5));
-			mapTypeValue.put(Integer.class.getName(), Integer.toString(6));
-			mapTypeValue.put(long.class.getName(), Integer.toString(7));
-			mapTypeValue.put(Long.class.getName(), Integer.toString(8));
-			mapTypeValue.put(float.class.getName(), Integer.toString(9));
-			mapTypeValue.put(Float.class.getName(), Integer.toString(10));
-			mapTypeValue.put(double.class.getName(), Integer.toString(11));
-			mapTypeValue.put(Double.class.getName(), Integer.toString(12));
-			mapTypeValue.put(char.class.getName(), Integer.toString(13));
-			mapTypeValue.put(String.class.getName(), Integer.toString(14));
-			mapTypeValue.put(char.class.getName(), Integer.toString(15));
-			mapTypeValue.put(Date.class.getName(), Integer.toString(16));
-			mapTypeValue.put(BigDecimal.class.getName(), Integer.toString(17));
-			mapTypeValue.put(ArrayList.class.getName(), Integer.toString(18));
-			mapTypeValue.put(HashMap.class.getName(), Integer.toString(19));
-		}
-		if(mapValueType==null){
-			mapValueType=new HashMap<String, String>();
-			Iterator<String> it=mapTypeValue.keySet().iterator();
-			while(it.hasNext()){
-				String key=it.next();
-				String value=mapTypeValue.get(key);
-				mapValueType.put(value, key);
-			}
-		}
-	}
 	
-	private static String transformTypeToValue(String type){
-		if(mapTypeValue==null || mapValueType==null){
-			initMap();
-		}
-		String value=mapTypeValue.get(type);
+	
+	private static String transformTypeToValue(String type,TypeValue typeValue)throws Exception{
+		typeValue.setType(type);
+		String value = typeValue.getValueByType(type);
 		if(StringUtils.isBlank(value)){
-			value=type;
+			throw new Exception("类型对应的值为空");
 		}
 		return value;
 	}
 	
-	private static String transformValueToType(String value){
-		if(mapTypeValue==null || mapValueType==null){
-			initMap();
-		}
-		String type=mapValueType.get(value);
+	private static String transformValueToType(String value,TypeValue typeValue)throws Exception{
+		String type=typeValue.getTypeByValue(value);
 		if(StringUtils.isBlank(type)){
-			type=value;
+			throw new Exception("对应的值为空");
 		}
 		return type;
+	}
+	
+}
+
+class TypeValue{
+	private int index;
+	private Map<String,String> typeValueMap = new HashMap<String, String>();
+	private Map<String,String> valueTypeMap = new HashMap<String, String>();
+	
+	public TypeValue(){
+		this.index = typeValueDefultMap.size()+1;
+	}
+	
+	
+	public void addTypeValueMap(Map<String,String> map){
+		if(map !=null && !map.isEmpty()){
+			Iterator<String> it = map.keySet().iterator();
+			while(it.hasNext()){
+				String key = it.next();
+				String value = map.get(key);
+				if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)){
+					typeValueMap.put(key, value);
+					valueTypeMap.put(value,key);
+				}
+			}
+		}
+	}
+	
+	
+	public void setType(String type){
+		if(StringUtils.isNotBlank(type)){
+			if(TypeValue.getDefultValueByType(type)==null){
+				if(typeValueMap.get(type) == null){
+					String value = Integer.toString(index++);
+					typeValueMap.put(type, value);
+					valueTypeMap.put(value, type);
+				}
+			}
+		}
+	}
+	
+	public String getValueByType(String type){
+		String value = TypeValue.getDefultValueByType(type);
+		if(value==null){
+			value = typeValueMap.get(type);
+		}
+		return value;
+	}
+	public String getTypeByValue(String value){
+		String type = TypeValue.getDefultTypeByValue(value);
+		if(type == null){
+			type = valueTypeMap.get(value);
+		}
+		return type;
+	}
+	
+	
+	public int getIndex() {
+		return index;
+	}
+
+	public void setIndex(int index) {
+		this.index = index;
+	}
+
+	public Map<String, String> getTypeValueMap() {
+		return typeValueMap;
+	}
+
+	public void setTypeValueMap(Map<String, String> typeValueMap) {
+		this.typeValueMap = typeValueMap;
+	}
+	
+	
+	private static String getDefultValueByType(String type){
+		return typeValueDefultMap.get(type);
+	}
+	
+	private static String getDefultTypeByValue(String value){
+		return valueTypeDefultMap.get(value);
+	}
+	
+	public static Map<String,String> typeValueDefultMap = new HashMap<String, String>();
+	public static Map<String,String> valueTypeDefultMap = new HashMap<String, String>();
+	static{
+		typeValueDefultMap.put(byte.class.getName(), Integer.toString(1));
+		typeValueDefultMap.put(Byte.class.getName(), Integer.toString(2));
+		typeValueDefultMap.put(boolean.class.getName(), Integer.toString(3));
+		typeValueDefultMap.put(Boolean.class.getName(), Integer.toString(4));
+		typeValueDefultMap.put(int.class.getName(), Integer.toString(5));
+		typeValueDefultMap.put(Integer.class.getName(), Integer.toString(6));
+		typeValueDefultMap.put(long.class.getName(), Integer.toString(7));
+		typeValueDefultMap.put(Long.class.getName(), Integer.toString(8));
+		typeValueDefultMap.put(float.class.getName(), Integer.toString(9));
+		typeValueDefultMap.put(Float.class.getName(), Integer.toString(10));
+		typeValueDefultMap.put(double.class.getName(), Integer.toString(11));
+		typeValueDefultMap.put(Double.class.getName(), Integer.toString(12));
+		typeValueDefultMap.put(char.class.getName(), Integer.toString(13));
+		typeValueDefultMap.put(String.class.getName(), Integer.toString(14));
+		typeValueDefultMap.put(Date.class.getName(), Integer.toString(15));
+		typeValueDefultMap.put(BigDecimal.class.getName(), Integer.toString(16));
+		typeValueDefultMap.put(ArrayList.class.getName(), Integer.toString(17));
+		typeValueDefultMap.put(HashMap.class.getName(), Integer.toString(18));
+		
+		
+		Iterator<String> it = typeValueDefultMap.keySet().iterator();
+		while(it.hasNext()){
+			String key = it.next();
+			String value = typeValueDefultMap.get(key);
+			if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)){
+				valueTypeDefultMap.put(value,key);
+			}
+		}
 	}
 	
 }
