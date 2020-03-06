@@ -5,12 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +42,7 @@ public class ObjectStringUtils {
 	}
 	
 	
-	public static <T> T stringToObject(String jsonStr)throws Exception{
+	public static <T> T stringTransformObject(String jsonStr)throws Exception{
 		T result = null;
 		if(StringUtils.isNotBlank(jsonStr)){
 			JSONObject josnObject =  JSON.parseObject(jsonStr);
@@ -94,31 +89,31 @@ public class ObjectStringUtils {
 		TypeDictionary typeDictionary = null;
 		if(treeBean!=null){
 			typeDictionary = new TypeDictionary();
-			ITreeBeanProess treeBeanProess = new ITreeBeanProess() {
-				public void treeBeanProess(TreeBean treeBean, TypeDictionary typeDictionary)
+			ITreeBeanProcess treeBeanProcess = new ITreeBeanProcess() {
+				public void treeBeanProcess(TreeBean treeBean, TypeDictionary typeDictionary)
 						throws Exception {
 					String t = treeBean.getT();
 					typeDictionary.setType(t);
 				}
 			};
-			ObjectStringUtils.treeBeanProess(treeBean,typeDictionary,treeBeanProess);
+			ObjectStringUtils.treeBeanProcess(treeBean,typeDictionary,treeBeanProcess);
 		}
 		return typeDictionary;
 	}
 	
 	
-	private static void treeBeanProess(TreeBean treeBean,TypeDictionary typeDictionary,ITreeBeanProess treeBeanProess)throws Exception{
+	private static void treeBeanProcess(TreeBean treeBean,TypeDictionary typeDictionary,ITreeBeanProcess treeBeanProess)throws Exception{
 		if(treeBean!=null && typeDictionary!=null){
-			treeBeanProess.treeBeanProess(treeBean, typeDictionary);
+			treeBeanProess.treeBeanProcess(treeBean, typeDictionary);
 			TreeBean b = treeBean.getB();
 			List<TreeBean> l = treeBean.getL();
 			Map<TreeBean,TreeBean> m = treeBean.getM();
 			if(b!=null){
-				ObjectStringUtils.treeBeanProess(b, typeDictionary,treeBeanProess);
+				ObjectStringUtils.treeBeanProcess(b, typeDictionary,treeBeanProess);
 			}
 			if(l!=null && !l.isEmpty()){
 				for (TreeBean tBean : l) {
-					ObjectStringUtils.treeBeanProess(tBean, typeDictionary,treeBeanProess);
+					ObjectStringUtils.treeBeanProcess(tBean, typeDictionary,treeBeanProess);
 				}
 			}
 			if(m!=null && !m.isEmpty()){
@@ -126,8 +121,8 @@ public class ObjectStringUtils {
 				while(it.hasNext()){
 					TreeBean key = it.next();
 					TreeBean value = m.get(key);
-					ObjectStringUtils.treeBeanProess(key, typeDictionary,treeBeanProess);
-					ObjectStringUtils.treeBeanProess(value, typeDictionary,treeBeanProess);
+					ObjectStringUtils.treeBeanProcess(key, typeDictionary,treeBeanProess);
+					ObjectStringUtils.treeBeanProcess(value, typeDictionary,treeBeanProess);
 				}
 			}
 		}
@@ -136,35 +131,35 @@ public class ObjectStringUtils {
 	
 	private static void encodedType(TreeBean treeBean,TypeDictionary typeDictionary)throws Exception{
 		if(treeBean!=null && typeDictionary!=null){
-			ITreeBeanProess treeBeanProess = new ITreeBeanProess() {
-				public void treeBeanProess(TreeBean treeBean, TypeDictionary typeDictionary)
+			ITreeBeanProcess treeBeanProcess = new ITreeBeanProcess() {
+				public void treeBeanProcess(TreeBean treeBean, TypeDictionary typeDictionary)
 						throws Exception {
 					String t = treeBean.getT();
 					treeBean.setT(typeDictionary.getValueByType(t));
 				}
 			};
-			ObjectStringUtils.treeBeanProess(treeBean, typeDictionary,treeBeanProess);
+			ObjectStringUtils.treeBeanProcess(treeBean, typeDictionary,treeBeanProcess);
 		}
 	}
 	
 	
 	private static void decodeType(TreeBean treeBean,TypeDictionary typeDictionary)throws Exception{
 		if(treeBean!=null && typeDictionary!=null){
-			ITreeBeanProess treeBeanProess = new ITreeBeanProess() {
-				public void treeBeanProess(TreeBean treeBean, TypeDictionary typeDictionary)
+			ITreeBeanProcess treeBeanProess = new ITreeBeanProcess() {
+				public void treeBeanProcess(TreeBean treeBean, TypeDictionary typeDictionary)
 						throws Exception {
 					String t = treeBean.getT();
 					treeBean.setT(typeDictionary.getTypeByValue(t));
 				}
 			};
-			ObjectStringUtils.treeBeanProess(treeBean, typeDictionary,treeBeanProess);
+			ObjectStringUtils.treeBeanProcess(treeBean, typeDictionary,treeBeanProess);
 		}
 	}
 	
 }
 
-interface ITreeBeanProess{
-	public void treeBeanProess(TreeBean treeBean,TypeDictionary typeDictionary)throws Exception;
+interface ITreeBeanProcess{
+	public void treeBeanProcess(TreeBean treeBean,TypeDictionary typeDictionary)throws Exception;
 }
 
 
@@ -184,9 +179,9 @@ abstract class TransformHandle implements ITransform {
 		this.transformAdapter = transformAdapter;
 	}
 
-	private void checkClass(String clas)throws Exception{
-		if(!this.isTransformClass(clas)){
-			throw new Exception("处理类型校验失败,class:"+clas);
+	private void checkClass(String classValue)throws Exception{
+		if(!this.isTransformClass(classValue)){
+			throw new Exception("处理类型校验失败,class:"+classValue);
 		}
 	}
 	
@@ -221,10 +216,13 @@ abstract class TransformHandle implements ITransform {
  */
 class TransformBaseClassHandle extends TransformHandle{
 
-	public boolean isTransformClass(String clas) throws Exception {
+	public boolean isTransformClass(String className) throws Exception {
 		boolean flag = false;
-		if(StringUtils.isNotBlank(clas)){
-			flag = this.isBaseType(clas);
+		if(StringUtils.isNotBlank(className)){
+			BaseTypeDo baseTypeDo = BASE_TYPE_DO_MAP.get(className);
+			if(baseTypeDo!=null){
+				flag = baseTypeDo.isThisType(className);
+			}
 		}
 		return flag;
 	}
@@ -233,10 +231,9 @@ class TransformBaseClassHandle extends TransformHandle{
 	protected TreeBean objectToTreeBeanTransform(Object obj) throws Exception {
 		TreeBean treeBean = null;
 		if(obj!=null){
-			String value = this.getBaseValueToString(obj);
-			if(value == null){
-				throw new Exception();
-			}
+			String className = obj.getClass().getName();
+			BaseTypeDo baseTypeDo = BASE_TYPE_DO_MAP.get(className);
+			String value = baseTypeDo.baseValueToString(obj);
 			treeBean = new TreeBean();
 			treeBean.setT(obj.getClass().getName());
 			treeBean.setV(value);
@@ -250,98 +247,136 @@ class TransformBaseClassHandle extends TransformHandle{
 		if(tree!=null){
 			String t = tree.getT();
 			String v = tree.getV();
-			value = this.getStringToBaseValue(v, t);
+			BaseTypeDo baseTypeDo = BASE_TYPE_DO_MAP.get(t);
+			value = baseTypeDo.stringToBaseValue(v);
 		}
 		return value;
 	}
-	
-	
-	private boolean isBaseType(String clas){
-		boolean isBaseType=false;
-		if(clas.equals(byte.class.getName())||clas.equals(Byte.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(boolean.class.getName())||clas.equals(Boolean.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(int.class.getName())||clas.equals(Integer.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(long.class.getName())||clas.equals(Long.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(float.class.getName())||clas.equals(Float.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(double.class.getName())||clas.equals(Double.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(char.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(String.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(Date.class.getName())){
-			isBaseType=true;
-		}else if(clas.equals(BigDecimal.class.getName())){
-			isBaseType=true;
-		}
-		return isBaseType;
-	}
-	
-	
-	private String getBaseValueToString(Object value)throws Exception{
-		String result=null;
-		if(value!=null){
-			Class<?> clas=value.getClass();
-			if(clas.equals(byte.class)||clas.equals(Byte.class)){
-				result=value.toString();
-			}else if(clas.equals(boolean.class)||clas.equals(Boolean.class)){
-				result=value.toString();
-			}else if(clas.equals(int.class)||clas.equals(Integer.class)){
-				result=value.toString();
-			}else if(clas.equals(long.class)||clas.equals(Long.class)){
-				result=value.toString();
-			}else if(clas.equals(float.class)||clas.equals(Float.class)){
-				result=value.toString();
-			}else if(clas.equals(double.class)||clas.equals(Double.class)){
-				result=value.toString();
-			}else if(clas.equals(char.class)){
-				result=value.toString();
-			}else if(clas.equals(String.class)){
-				result=value.toString();
-			}else if(clas.equals(Date.class)){
-				result=DateTimeUtils.dateFormatString((Date)value, DateTimeUtils.FormatType.FORMAT_Y_M_D_H_M_S_S_1);
-			}else if(clas.equals(BigDecimal.class)){
-				result=value.toString();
+
+	abstract static class BaseTypeDo{
+		private List<String> classNameList;
+
+		public BaseTypeDo(String... classNames){
+			if(classNames!=null && classNames.length>0){
+				this.classNameList = new ArrayList<String>();
+				for (int i=0;i<classNames.length;i++){
+					this.classNameList.add(classNames[i]);
+				}
 			}
 		}
-		return result;
+
+		public List<String> getBaseTypeNameList(){
+			return this.classNameList;
+		}
+
+		public boolean isThisType(String className){
+			boolean isThisType = false;
+			if(classNameList!=null && classNameList.size()>0 &&
+					StringUtils.isNotBlank(className) && classNameList.contains(className)){
+				isThisType = true;
+			}
+			return isThisType;
+		}
+
+		public String baseValueToString(Object object)throws Exception{
+			String result = null;
+			if(object!=null){
+				result = this.baseValueToStringDefault(object);
+			}
+			return result;
+		}
+		public Object stringToBaseValue(String value)throws Exception{
+			Object result = null;
+			if(StringUtils.isNotBlank(value)){
+				result = this.stringToBaseValueDefault(value);
+			}
+			return result;
+		}
+		protected String baseValueToStringDefault(Object object)throws Exception{
+			return object.toString();
+		}
+		protected Object stringToBaseValueDefault(String value)throws Exception{
+			return value;
+		}
+
 	}
-	
-	
-	private Object getStringToBaseValue(String value,String type)throws Exception{
-		Object result=null;
-		if(StringUtils.isNotBlank(value)){
-			if(type.equals(byte.class.getName())||type.equals(Byte.class.getName())){
-				result=Byte.parseByte(value);
-			}else if(type.equals(boolean.class.getName())||type.equals(Boolean.class.getName())){
-				result=Boolean.getBoolean(value);
-			}else if(type.equals(int.class.getName())||type.equals(Integer.class.getName())){
-				result=Integer.parseInt(value);
-			}else if(type.equals(long.class.getName())||type.equals(Long.class.getName())){
-				result=Long.parseLong(value);
-			}else if(type.equals(float.class.getName())||type.equals(Float.class.getName())){
-				result=Float.parseFloat(value);
-			}else if(type.equals(double.class.getName())||type.equals(Double.class.getName())){
-				result=Double.parseDouble(value);
-			}else if(type.equals(char.class.getName())){
+	private static Map<String,BaseTypeDo> BASE_TYPE_DO_MAP = new HashMap<String, BaseTypeDo>();
+	static{
+		List<BaseTypeDo> list =new ArrayList<BaseTypeDo>();
+		BaseTypeDo stringType = new BaseTypeDo(String.class.getName()){
+			public Object stringToBaseValue(String value) throws Exception {
+				return value;
+			}
+		};
+		list.add(stringType);
+		BaseTypeDo intType = new BaseTypeDo(int.class.getName(),Integer.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return Integer.parseInt(value);
+			}
+		};
+		list.add(intType);
+		BaseTypeDo longType = new BaseTypeDo(long.class.getName(),Long.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return Long.parseLong(value);
+			}
+		};
+		list.add(longType);
+		BaseTypeDo floatType = new BaseTypeDo(float.class.getName(),Float.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return Float.parseFloat(value);
+			}
+		};
+		list.add(floatType);
+		BaseTypeDo doubleType = new BaseTypeDo(double.class.getName(),Double.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return Double.parseDouble(value);
+			}
+		};
+		list.add(doubleType);
+		BaseTypeDo bigDecimalType = new BaseTypeDo(BigDecimal.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return new BigDecimal(value);
+			}
+		};
+		list.add(bigDecimalType);
+		BaseTypeDo dateType = new BaseTypeDo(Date.class.getName()){
+			public String baseValueToStringDefault(Object object)throws Exception{
+				return DateTimeUtils.dateFormatString((Date)object, DateTimeUtils.FormatType.FORMAT_Y_M_D_H_M_S_S_1);
+			}
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return DateTimeUtils.stringFormatDate(value, DateTimeUtils.FormatType.FORMAT_Y_M_D_H_M_S_S_1);
+			}
+		};
+		list.add(dateType);
+		BaseTypeDo booleanType = new BaseTypeDo(boolean.class.getName(),Boolean.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return Boolean.parseBoolean(value);
+			}
+		};
+		list.add(booleanType);
+		BaseTypeDo byteType = new BaseTypeDo(byte.class.getName(),Byte.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				return Byte.parseByte(value);
+			}
+		};
+		list.add(byteType);
+		BaseTypeDo charType = new BaseTypeDo(char.class.getName()){
+			public Object stringToBaseValueDefault(String value) throws Exception {
+				Object result = null;
 				char[] charArray=value.toString().toCharArray();
 				if(charArray!=null && charArray.length>0){
 					result=charArray[0];
 				}
-			}else if(type.equals(String.class.getName())){
-				result=value;
-			}else if(type.equals(Date.class.getName())){
-				result=DateTimeUtils.stringFormatDate(value, DateTimeUtils.FormatType.FORMAT_Y_M_D_H_M_S_S_1);
-			}else if(type.equals(BigDecimal.class.getName())){
-				result=new BigDecimal(value);
+				return result;
+			}
+		};
+		list.add(charType);
+		for (BaseTypeDo item : list) {
+			List<String> nameListItem = item.getBaseTypeNameList();
+			for (String type :nameListItem) {
+				BASE_TYPE_DO_MAP.put(type,item);
 			}
 		}
-		return result;
 	}
 }
 
@@ -353,9 +388,9 @@ class TransformBaseClassHandle extends TransformHandle{
 class TransformArrayHandle extends TransformHandle{
 
 	@Override
-	public boolean isTransformClass(String clas) throws Exception {
+	public boolean isTransformClass(String classValue) throws Exception {
 		boolean flag = false;
-		if(StringUtils.isNotBlank(clas) && clas.indexOf("[L")==0){
+		if(StringUtils.isNotBlank(classValue) && classValue.indexOf("[L")==0){
 			flag = true;
 		}
 		return flag;
@@ -370,9 +405,7 @@ class TransformArrayHandle extends TransformHandle{
 				List<TreeBean> list = new ArrayList<TreeBean>();
 				for (Object item : array) {
 					TreeBean treeBeanItem = this.getTransformAdapter().objectToTreeBean(item);
-					if(treeBeanItem!=null){
-						list.add(treeBeanItem);
-					}
+					list.add(treeBeanItem);
 				}
 				if(!list.isEmpty()){
 					treeBean = new TreeBean();
@@ -414,12 +447,11 @@ class TransformArrayHandle extends TransformHandle{
 class TransformListHandle extends TransformHandle{
 
 	@Override
-	public boolean isTransformClass(String clas) throws Exception {
+	public boolean isTransformClass(String classValue) throws Exception {
 		boolean flag = false;
-		if(StringUtils.isNotBlank(clas)){
-			Class<?> classT=Class.forName(clas);
-			Object object = classT.newInstance();
-			if(object instanceof List){
+		if(StringUtils.isNotBlank(classValue)){
+			Class<?> classT=Class.forName(classValue);
+			if(List.class.isAssignableFrom(classT)){
 				flag = true;
 			}
 		}
@@ -435,12 +467,11 @@ class TransformListHandle extends TransformHandle{
 				List<TreeBean> treeBeanList = new ArrayList<TreeBean>();
 				for (Object item : list) {
 					TreeBean treeBeanItem = this.getTransformAdapter().objectToTreeBean(item);
-					if(treeBeanItem!=null){
-						treeBeanList.add(treeBeanItem);
-					}
+					treeBeanList.add(treeBeanItem);
 				}
+				String className = obj.getClass().getName();
 				treeBean = new TreeBean();
-				treeBean.setT(obj.getClass().getName());
+				treeBean.setT(className);
 				treeBean.setL(treeBeanList);
 			}
 		}
@@ -454,15 +485,13 @@ class TransformListHandle extends TransformHandle{
 			String type = tree.getT();
 			List<TreeBean> treeBeanList = tree.getL();
 			if(treeBeanList!=null && !treeBeanList.isEmpty()){
-				Class<?> clas=Class.forName(type);
-				Object object = clas.newInstance();
+				Class<?> classType=Class.forName(type);
+				Object object = classType.newInstance();
 				@SuppressWarnings("unchecked")
 				List<Object> list=(List<Object>)object;
 				for (TreeBean treeBeanItem : treeBeanList) {
 					Object objectItem = this.getTransformAdapter().treeBeanToObject(treeBeanItem);
-					if(objectItem!=null){
-						list.add(objectItem);
-					}
+					list.add(objectItem);
 				}
 				result = list;
 			}
@@ -479,12 +508,11 @@ class TransformListHandle extends TransformHandle{
 class TransformMapHandle extends TransformHandle{
 
 	@Override
-	public boolean isTransformClass(String clas) throws Exception {
+	public boolean isTransformClass(String classValue) throws Exception {
 		boolean flag = false;
-		if(StringUtils.isNotBlank(clas)){
-			Class<?> classT=Class.forName(clas);
-			Object object = classT.newInstance();
-			if(object instanceof Map){
+		if(StringUtils.isNotBlank(classValue)){
+			Class<?> classT=Class.forName(classValue);
+			if(Map.class.isAssignableFrom(classT)){
 				flag = true;
 			}
 		}
@@ -503,7 +531,7 @@ class TransformMapHandle extends TransformHandle{
 				Object valueObject=map.get(key);
 				TreeBean jObjK=this.getTransformAdapter().objectToTreeBean(key);
 				TreeBean jObjV=this.getTransformAdapter().objectToTreeBean(valueObject);
-				if(jObjK!=null && jObjV!=null){
+				if(jObjK!=null){
 					valueMap.put(jObjK, jObjV);
 				}
 			}
@@ -523,8 +551,8 @@ class TransformMapHandle extends TransformHandle{
 			String type = tree.getT();
 			Map<TreeBean,TreeBean> valueMap= tree.getM();
 			if(valueMap!=null){
-				Class<?> clas=Class.forName(type);
-				Object object = clas.newInstance();
+				Class<?> classType=Class.forName(type);
+				Object object = classType.newInstance();
 				@SuppressWarnings("unchecked")
 				Map<Object,Object> map=(Map<Object,Object>)object;
 				Iterator<TreeBean> it=valueMap.keySet().iterator();
@@ -533,7 +561,7 @@ class TransformMapHandle extends TransformHandle{
 					TreeBean valueItem=valueMap.get(keyItem);
 					Object keyObject = this.getTransformAdapter().treeBeanToObject(keyItem);
 					Object valueObject = this.getTransformAdapter().treeBeanToObject(valueItem);
-					if(keyObject!=null && valueObject!=null){
+					if(keyObject!=null){
 						map.put(keyObject, valueObject);
 					}
 				}
@@ -556,7 +584,7 @@ class TransformModelHandle extends TransformHandle{
 	private static Logger logger = LoggerFactory.getLogger(TransformModelHandle.class);
 	
 	@Override
-	public boolean isTransformClass(String clas) throws Exception {
+	public boolean isTransformClass(String classValue) throws Exception {
 		boolean flag = true;
 		return flag;
 	}
@@ -600,8 +628,8 @@ class TransformModelHandle extends TransformHandle{
 			String type = tree.getT();
 			Map<TreeBean,TreeBean> valueMap= tree.getM();
 			if(valueMap!=null){
-				Class<?> clas=Class.forName(type);
-				Object object = clas.newInstance();
+				Class<?> classType=Class.forName(type);
+				Object object = classType.newInstance();
 				Iterator<TreeBean> it=valueMap.keySet().iterator();
 				while(it.hasNext()){
 					TreeBean keyItem=it.next();
@@ -609,7 +637,7 @@ class TransformModelHandle extends TransformHandle{
 					Object keyObject = this.getTransformAdapter().treeBeanToObject(keyItem);
 					Object valueObject = this.getTransformAdapter().treeBeanToObject(valueItem);
 					if(keyObject!=null && valueObject!=null){
-						Method methodSet = ModleClassManager.getMethodSet(clas, keyObject.toString());
+						Method methodSet = ModleClassManager.getMethodSet(classType, keyObject.toString());
 						if(methodSet!=null && Modifier.isPublic(methodSet.getModifiers())){
 							try {
 								methodSet.invoke(object, valueObject);
@@ -751,21 +779,21 @@ class TreeBean{
 		return result;
 	}
 	
-	public static TreeBean jsonTreeToTreeBean(JSONObject josnObject){
+	public static TreeBean jsonTreeToTreeBean(JSONObject jsonObject){
 		TreeBean result = null;
-		if(josnObject!=null){
-			result = TreeBean.getTreeBeanObject(josnObject);
+		if(jsonObject!=null){
+			result = TreeBean.getTreeBeanObject(jsonObject);
 		}
 		return result;
 	}
 	
-	private static TreeBean getTreeBeanObject(JSONObject josnObject){
+	private static TreeBean getTreeBeanObject(JSONObject jsonObject){
 		TreeBean treeBean = null;
-		if(josnObject!=null){
-			String t=josnObject.getString("t");
-			String v=josnObject.getString("v");
-			JSONArray l=josnObject.getJSONArray("l");
-			JSONObject m=josnObject.getJSONObject("m");
+		if(jsonObject!=null){
+			String t=jsonObject.getString("t");
+			String v=jsonObject.getString("v");
+			JSONArray l=jsonObject.getJSONArray("l");
+			JSONObject m=jsonObject.getJSONObject("m");
 			
 			treeBean = new TreeBean();
 			treeBean.setT(t);
@@ -787,9 +815,7 @@ class TreeBean{
 			for (int i = 0; i < l.size(); i++) {
 				JSONObject obj = l.getJSONObject(i);
 				TreeBean treeBean = TreeBean.getTreeBeanObject(obj);
-				if(treeBean!=null){
-					list.add(treeBean);
-				}
+				list.add(treeBean);
 			}
 		}
 		return list;
@@ -861,7 +887,7 @@ class TypeDictionary{
 	private Map<String,String> valueTypeMap = new HashMap<String, String>();
 	
 	public TypeDictionary(){
-		this.index = typeValueDefultMap.size()+1;
+		this.index = typeValueDefaultMap.size()+1;
 	}
 	
 	
@@ -872,8 +898,8 @@ class TypeDictionary{
 				String key = it.next();
 				String value = map.get(key);
 				if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)){
-					typeValueMap.put(key, value);
-					valueTypeMap.put(value,key);
+					this.typeValueMap.put(key, value);
+					this.valueTypeMap.put(value,key);
 				}
 			}
 		}
@@ -882,27 +908,27 @@ class TypeDictionary{
 	
 	public void setType(String type){
 		if(StringUtils.isNotBlank(type)){
-			if(TypeDictionary.getDefultValueByType(type)==null){
-				if(typeValueMap.get(type) == null){
+			if(TypeDictionary.getDefaultValueByType(type)==null){
+				if(this.typeValueMap.get(type) == null){
 					String value = Integer.toString(index++);
-					typeValueMap.put(type, value);
-					valueTypeMap.put(value, type);
+					this.typeValueMap.put(type, value);
+					this.valueTypeMap.put(value, type);
 				}
 			}
 		}
 	}
 	
 	public String getValueByType(String type){
-		String value = TypeDictionary.getDefultValueByType(type);
+		String value = TypeDictionary.getDefaultValueByType(type);
 		if(value==null){
-			value = typeValueMap.get(type);
+			value = this.typeValueMap.get(type);
 		}
 		return value;
 	}
 	public String getTypeByValue(String value){
-		String type = TypeDictionary.getDefultTypeByValue(value);
+		String type = TypeDictionary.getDefaultTypeByValue(value);
 		if(type == null){
-			type = valueTypeMap.get(value);
+			type = this.valueTypeMap.get(value);
 		}
 		return type;
 	}
@@ -925,43 +951,43 @@ class TypeDictionary{
 	}
 	
 	
-	private static String getDefultValueByType(String type){
-		return typeValueDefultMap.get(type);
+	private static String getDefaultValueByType(String type){
+		return typeValueDefaultMap.get(type);
 	}
 	
-	private static String getDefultTypeByValue(String value){
-		return valueTypeDefultMap.get(value);
+	private static String getDefaultTypeByValue(String value){
+		return valueTypeDefaultMap.get(value);
 	}
 	
-	public static Map<String,String> typeValueDefultMap = new HashMap<String, String>();
-	public static Map<String,String> valueTypeDefultMap = new HashMap<String, String>();
+	public static Map<String,String> typeValueDefaultMap = new HashMap<String, String>();
+	public static Map<String,String> valueTypeDefaultMap = new HashMap<String, String>();
 	static{
-		typeValueDefultMap.put(byte.class.getName(), Integer.toString(1));
-		typeValueDefultMap.put(Byte.class.getName(), Integer.toString(2));
-		typeValueDefultMap.put(boolean.class.getName(), Integer.toString(3));
-		typeValueDefultMap.put(Boolean.class.getName(), Integer.toString(4));
-		typeValueDefultMap.put(int.class.getName(), Integer.toString(5));
-		typeValueDefultMap.put(Integer.class.getName(), Integer.toString(6));
-		typeValueDefultMap.put(long.class.getName(), Integer.toString(7));
-		typeValueDefultMap.put(Long.class.getName(), Integer.toString(8));
-		typeValueDefultMap.put(float.class.getName(), Integer.toString(9));
-		typeValueDefultMap.put(Float.class.getName(), Integer.toString(10));
-		typeValueDefultMap.put(double.class.getName(), Integer.toString(11));
-		typeValueDefultMap.put(Double.class.getName(), Integer.toString(12));
-		typeValueDefultMap.put(char.class.getName(), Integer.toString(13));
-		typeValueDefultMap.put(String.class.getName(), Integer.toString(14));
-		typeValueDefultMap.put(Date.class.getName(), Integer.toString(15));
-		typeValueDefultMap.put(BigDecimal.class.getName(), Integer.toString(16));
-		typeValueDefultMap.put(ArrayList.class.getName(), Integer.toString(17));
-		typeValueDefultMap.put(HashMap.class.getName(), Integer.toString(18));
+		typeValueDefaultMap.put(byte.class.getName(), Integer.toString(1));
+		typeValueDefaultMap.put(Byte.class.getName(), Integer.toString(2));
+		typeValueDefaultMap.put(boolean.class.getName(), Integer.toString(3));
+		typeValueDefaultMap.put(Boolean.class.getName(), Integer.toString(4));
+		typeValueDefaultMap.put(int.class.getName(), Integer.toString(5));
+		typeValueDefaultMap.put(Integer.class.getName(), Integer.toString(6));
+		typeValueDefaultMap.put(long.class.getName(), Integer.toString(7));
+		typeValueDefaultMap.put(Long.class.getName(), Integer.toString(8));
+		typeValueDefaultMap.put(float.class.getName(), Integer.toString(9));
+		typeValueDefaultMap.put(Float.class.getName(), Integer.toString(10));
+		typeValueDefaultMap.put(double.class.getName(), Integer.toString(11));
+		typeValueDefaultMap.put(Double.class.getName(), Integer.toString(12));
+		typeValueDefaultMap.put(char.class.getName(), Integer.toString(13));
+		typeValueDefaultMap.put(String.class.getName(), Integer.toString(14));
+		typeValueDefaultMap.put(Date.class.getName(), Integer.toString(15));
+		typeValueDefaultMap.put(BigDecimal.class.getName(), Integer.toString(16));
+		typeValueDefaultMap.put(ArrayList.class.getName(), Integer.toString(17));
+		typeValueDefaultMap.put(HashMap.class.getName(), Integer.toString(18));
 		
 		
-		Iterator<String> it = typeValueDefultMap.keySet().iterator();
+		Iterator<String> it = typeValueDefaultMap.keySet().iterator();
 		while(it.hasNext()){
 			String key = it.next();
-			String value = typeValueDefultMap.get(key);
+			String value = typeValueDefaultMap.get(key);
 			if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)){
-				valueTypeDefultMap.put(value,key);
+				valueTypeDefaultMap.put(value,key);
 			}
 		}
 	}
