@@ -934,24 +934,24 @@ class TypeDictionary{
 
 	private static void  initDefault(){
 		try {
-			typeDictionaryValueDefault.addTypeDictionaryValue(byte.class.getName(), Integer.toString(1));
+			typeDictionaryValueDefault.addTypeDictionaryValue(String.class.getName(), Integer.toString(1));
 			typeDictionaryValueDefault.addTypeDictionaryValue(Byte.class.getName(), Integer.toString(2));
-			typeDictionaryValueDefault.addTypeDictionaryValue(boolean.class.getName(), Integer.toString(3));
-			typeDictionaryValueDefault.addTypeDictionaryValue(Boolean.class.getName(), Integer.toString(4));
-			typeDictionaryValueDefault.addTypeDictionaryValue(int.class.getName(), Integer.toString(5));
-			typeDictionaryValueDefault.addTypeDictionaryValue(Integer.class.getName(), Integer.toString(6));
-			typeDictionaryValueDefault.addTypeDictionaryValue(long.class.getName(), Integer.toString(7));
-			typeDictionaryValueDefault.addTypeDictionaryValue(Long.class.getName(), Integer.toString(8));
-			typeDictionaryValueDefault.addTypeDictionaryValue(float.class.getName(), Integer.toString(9));
-			typeDictionaryValueDefault.addTypeDictionaryValue(Float.class.getName(), Integer.toString(10));
-			typeDictionaryValueDefault.addTypeDictionaryValue(double.class.getName(), Integer.toString(11));
-			typeDictionaryValueDefault.addTypeDictionaryValue(Double.class.getName(), Integer.toString(12));
-			typeDictionaryValueDefault.addTypeDictionaryValue(char.class.getName(), Integer.toString(13));
-			typeDictionaryValueDefault.addTypeDictionaryValue(String.class.getName(), Integer.toString(14));
-			typeDictionaryValueDefault.addTypeDictionaryValue(Date.class.getName(), Integer.toString(15));
-			typeDictionaryValueDefault.addTypeDictionaryValue(BigDecimal.class.getName(), Integer.toString(16));
-			typeDictionaryValueDefault.addTypeDictionaryValue(ArrayList.class.getName(), Integer.toString(17));
-			typeDictionaryValueDefault.addTypeDictionaryValue(HashMap.class.getName(), Integer.toString(18));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Integer.class.getName(), Integer.toString(3));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Long.class.getName(), Integer.toString(4));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Float.class.getName(), Integer.toString(5));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Double.class.getName(), Integer.toString(6));
+			typeDictionaryValueDefault.addTypeDictionaryValue(BigDecimal.class.getName(), Integer.toString(7));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Boolean.class.getName(), Integer.toString(8));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Date.class.getName(), Integer.toString(9));
+			typeDictionaryValueDefault.addTypeDictionaryValue(ArrayList.class.getName(), Integer.toString(10));
+			typeDictionaryValueDefault.addTypeDictionaryValue(HashMap.class.getName(), Integer.toString(11));
+			typeDictionaryValueDefault.addTypeDictionaryValue(byte.class.getName(), Integer.toString(12));
+			typeDictionaryValueDefault.addTypeDictionaryValue(int.class.getName(), Integer.toString(13));
+			typeDictionaryValueDefault.addTypeDictionaryValue(long.class.getName(), Integer.toString(14));
+			typeDictionaryValueDefault.addTypeDictionaryValue(float.class.getName(), Integer.toString(15));
+			typeDictionaryValueDefault.addTypeDictionaryValue(double.class.getName(), Integer.toString(16));
+			typeDictionaryValueDefault.addTypeDictionaryValue(boolean.class.getName(), Integer.toString(17));
+			typeDictionaryValueDefault.addTypeDictionaryValue(char.class.getName(), Integer.toString(18));
 		}catch (Exception e){
 			e.printStackTrace();
 		}
