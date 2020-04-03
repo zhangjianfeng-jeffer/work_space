@@ -105,6 +105,12 @@ public class ModleClassManager {
 				}else{
 					methodName=name;
 				}
+			}else if(type.equals(Boolean.class)){
+				if(name.indexOf("is")==0){
+					methodName="get"+name.replace("is", "");
+				}else{
+					methodName="get"+StringUtils.toUpperCaseFirst(name);
+				}
 			}else{
 				methodName="get"+StringUtils.toUpperCaseFirst(name);
 			}
@@ -117,7 +123,7 @@ public class ModleClassManager {
 		if(field!=null){
 			Class<?> type=field.getType();
 			String name=field.getName();
-			if(type.equals(boolean.class)){
+			if(type.equals(boolean.class) || type.equals(Boolean.class)){
 				if(name.indexOf("is")==0){
 					methodName="set"+name.replace("is", "");
 				}else{

@@ -9,6 +9,14 @@ public class MyTest {
 	private Long id;
 	
 	private String name;
+
+	private boolean isSuccess;
+
+	private boolean address;
+
+	private Boolean isOk;
+
+	private Boolean result;
 	
 	private List<MyTest> userList;
 
@@ -36,11 +44,49 @@ public class MyTest {
 		this.userList = userList;
 	}
 
+
 	@Override
 	public String toString() {
-		return "MyTest [id=" + id + ", name=" + name + ", userList=" + userList
-				+ "]";
+		return "MyTest{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", isSuccess=" + isSuccess +
+				", address=" + address +
+				", isOk=" + isOk +
+				", result=" + result +
+				", userList=" + userList +
+				'}';
 	}
-	
-	
+
+	public boolean isSuccess() {
+		return isSuccess;
+	}
+
+	public void setSuccess(boolean success) {
+		isSuccess = success;
+	}
+
+	public Boolean getOk() {
+		return isOk;
+	}
+
+	public void setOk(Boolean ok) {
+		isOk = ok;
+	}
+
+	public Boolean getResult() {
+		return result;
+	}
+
+	public void setResult(Boolean result) {
+		this.result = result;
+	}
+
+	public boolean isAddress() {
+		return address;
+	}
+
+	public void setAddress(boolean address) {
+		this.address = address;
+	}
 }

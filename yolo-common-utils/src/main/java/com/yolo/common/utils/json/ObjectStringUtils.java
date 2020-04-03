@@ -390,8 +390,11 @@ class TransformArrayHandle extends TransformHandle{
 	@Override
 	public boolean isTransformClass(String classValue) throws Exception {
 		boolean flag = false;
-		if(StringUtils.isNotBlank(classValue) && classValue.indexOf("[L")==0){
-			flag = true;
+		if(StringUtils.isNotBlank(classValue)){
+			Class<?> classT=Class.forName(classValue);
+			if(classT.isArray()){
+				flag = true;
+			}
 		}
 		return flag;
 	}
@@ -424,10 +427,9 @@ class TransformArrayHandle extends TransformHandle{
 			String type = tree.getT();
 			List<TreeBean> list = tree.getL();
 			if(list!=null && !list.isEmpty()){
-				String typeItem=type.replace("[L", "");
-				typeItem=typeItem.replace(";", "");
-				Class<?> clasItem=Class.forName(typeItem);
-				Object array = Array.newInstance(clasItem, list.size());
+				Class<?> classType=Class.forName(type);
+				Class<?> classItem = classType.getComponentType();
+				Object array = Array.newInstance(classItem, list.size());
 				for (int i = 0; i < list.size(); i++) {
 					Object objectItem = this.getTransformAdapter().treeBeanToObject(list.get(i));
 					Array.set(array, i, objectItem);
@@ -882,114 +884,111 @@ class TreeBean{
 
 
 class TypeDictionary{
-	private int index;
-	private Map<String,String> typeValueMap = new HashMap<String, String>();
-	private Map<String,String> valueTypeMap = new HashMap<String, String>();
-	
-	public TypeDictionary(){
-		this.index = typeValueDefaultMap.size()+1;
+	private static TypeDictionaryValue typeDictionaryValueDefault = new TypeDictionaryValue();
+	private TypeDictionaryValue typeDictionaryValue = new  TypeDictionaryValue();
+	static {
+		initDefault();
 	}
-	
-	
-	public void addTypeValueMap(Map<String,String> map){
+
+	public void addTypeValueMap(Map<String,String> map)throws Exception{
 		if(map !=null && !map.isEmpty()){
 			Iterator<String> it = map.keySet().iterator();
 			while(it.hasNext()){
 				String key = it.next();
 				String value = map.get(key);
 				if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)){
-					this.typeValueMap.put(key, value);
-					this.valueTypeMap.put(value,key);
+					typeDictionaryValue.addTypeDictionaryValue(key, value);
 				}
 			}
 		}
 	}
-	
-	
-	public void setType(String type){
+
+	public void setType(String type)throws Exception{
 		if(StringUtils.isNotBlank(type)){
-			if(TypeDictionary.getDefaultValueByType(type)==null){
-				if(this.typeValueMap.get(type) == null){
-					String value = Integer.toString(index++);
-					this.typeValueMap.put(type, value);
-					this.valueTypeMap.put(value, type);
-				}
+			if(typeDictionaryValueDefault.getValueByType(type) == null && typeDictionaryValue.getValueByType(type) == null){
+				int size = typeDictionaryValueDefault.getTypeDictionaryValueSize() + typeDictionaryValue.getTypeDictionaryValueSize();
+				String value = Integer.toString(++size);
+				typeDictionaryValue.addTypeDictionaryValue(type,value);
 			}
 		}
 	}
 	
 	public String getValueByType(String type){
-		String value = TypeDictionary.getDefaultValueByType(type);
+		String value = typeDictionaryValueDefault.getValueByType(type);
 		if(value==null){
-			value = this.typeValueMap.get(type);
+			value = typeDictionaryValue.getValueByType(type);
 		}
 		return value;
 	}
 	public String getTypeByValue(String value){
-		String type = TypeDictionary.getDefaultTypeByValue(value);
+		String type = typeDictionaryValueDefault.getTypeByValue(value);
 		if(type == null){
-			type = this.valueTypeMap.get(value);
+			type = typeDictionaryValue.getTypeByValue(value);
 		}
 		return type;
 	}
-	
-	
-	public int getIndex() {
-		return index;
+
+	public Map<String, String> getTypeValueMap() {
+		return typeDictionaryValue.getTypeValueMap();
 	}
 
-	public void setIndex(int index) {
-		this.index = index;
+	private static void  initDefault(){
+		try {
+			typeDictionaryValueDefault.addTypeDictionaryValue(byte.class.getName(), Integer.toString(1));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Byte.class.getName(), Integer.toString(2));
+			typeDictionaryValueDefault.addTypeDictionaryValue(boolean.class.getName(), Integer.toString(3));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Boolean.class.getName(), Integer.toString(4));
+			typeDictionaryValueDefault.addTypeDictionaryValue(int.class.getName(), Integer.toString(5));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Integer.class.getName(), Integer.toString(6));
+			typeDictionaryValueDefault.addTypeDictionaryValue(long.class.getName(), Integer.toString(7));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Long.class.getName(), Integer.toString(8));
+			typeDictionaryValueDefault.addTypeDictionaryValue(float.class.getName(), Integer.toString(9));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Float.class.getName(), Integer.toString(10));
+			typeDictionaryValueDefault.addTypeDictionaryValue(double.class.getName(), Integer.toString(11));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Double.class.getName(), Integer.toString(12));
+			typeDictionaryValueDefault.addTypeDictionaryValue(char.class.getName(), Integer.toString(13));
+			typeDictionaryValueDefault.addTypeDictionaryValue(String.class.getName(), Integer.toString(14));
+			typeDictionaryValueDefault.addTypeDictionaryValue(Date.class.getName(), Integer.toString(15));
+			typeDictionaryValueDefault.addTypeDictionaryValue(BigDecimal.class.getName(), Integer.toString(16));
+			typeDictionaryValueDefault.addTypeDictionaryValue(ArrayList.class.getName(), Integer.toString(17));
+			typeDictionaryValueDefault.addTypeDictionaryValue(HashMap.class.getName(), Integer.toString(18));
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+}
+
+class TypeDictionaryValue{
+	private Map<String,String> typeValueMap = new HashMap<String, String>();
+	private Map<String,String> valueTypeMap = new HashMap<String, String>();
+
+	public String getValueByType(String type){
+		return typeValueMap.get(type);
+	}
+
+	public String getTypeByValue(String value){
+		return valueTypeMap.get(value);
+	}
+
+	public void addTypeDictionaryValue(String type,String value)throws Exception{
+		String valueItem = typeValueMap.get(type);
+		String classNameItem = valueTypeMap.get(value);
+		if(valueItem == null && classNameItem == null){
+			typeValueMap.put(type,value);
+			valueTypeMap.put(value,type);
+		}else{
+			throw new Exception("已经存在该类型字典数据");
+		}
+	}
+	public int getTypeDictionaryValueSize(){
+		return typeValueMap.size();
 	}
 
 	public Map<String, String> getTypeValueMap() {
 		return typeValueMap;
 	}
 
-	public void setTypeValueMap(Map<String, String> typeValueMap) {
-		this.typeValueMap = typeValueMap;
+	public Map<String, String> getValueTypeMap() {
+		return valueTypeMap;
 	}
-	
-	
-	private static String getDefaultValueByType(String type){
-		return typeValueDefaultMap.get(type);
-	}
-	
-	private static String getDefaultTypeByValue(String value){
-		return valueTypeDefaultMap.get(value);
-	}
-	
-	public static Map<String,String> typeValueDefaultMap = new HashMap<String, String>();
-	public static Map<String,String> valueTypeDefaultMap = new HashMap<String, String>();
-	static{
-		typeValueDefaultMap.put(byte.class.getName(), Integer.toString(1));
-		typeValueDefaultMap.put(Byte.class.getName(), Integer.toString(2));
-		typeValueDefaultMap.put(boolean.class.getName(), Integer.toString(3));
-		typeValueDefaultMap.put(Boolean.class.getName(), Integer.toString(4));
-		typeValueDefaultMap.put(int.class.getName(), Integer.toString(5));
-		typeValueDefaultMap.put(Integer.class.getName(), Integer.toString(6));
-		typeValueDefaultMap.put(long.class.getName(), Integer.toString(7));
-		typeValueDefaultMap.put(Long.class.getName(), Integer.toString(8));
-		typeValueDefaultMap.put(float.class.getName(), Integer.toString(9));
-		typeValueDefaultMap.put(Float.class.getName(), Integer.toString(10));
-		typeValueDefaultMap.put(double.class.getName(), Integer.toString(11));
-		typeValueDefaultMap.put(Double.class.getName(), Integer.toString(12));
-		typeValueDefaultMap.put(char.class.getName(), Integer.toString(13));
-		typeValueDefaultMap.put(String.class.getName(), Integer.toString(14));
-		typeValueDefaultMap.put(Date.class.getName(), Integer.toString(15));
-		typeValueDefaultMap.put(BigDecimal.class.getName(), Integer.toString(16));
-		typeValueDefaultMap.put(ArrayList.class.getName(), Integer.toString(17));
-		typeValueDefaultMap.put(HashMap.class.getName(), Integer.toString(18));
-		
-		
-		Iterator<String> it = typeValueDefaultMap.keySet().iterator();
-		while(it.hasNext()){
-			String key = it.next();
-			String value = typeValueDefaultMap.get(key);
-			if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)){
-				valueTypeDefaultMap.put(value,key);
-			}
-		}
-	}
-	
 }
