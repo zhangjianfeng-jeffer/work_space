@@ -404,17 +404,15 @@ class TransformArrayHandle extends TransformHandle{
 		TreeBean treeBean = null;
 		if(obj!=null){
 			Object[] array=(Object[])obj;
-			if(array!=null && array.length>0){
+			if(array!=null){
 				List<TreeBean> list = new ArrayList<TreeBean>();
 				for (Object item : array) {
 					TreeBean treeBeanItem = this.getTransformAdapter().objectToTreeBean(item);
 					list.add(treeBeanItem);
 				}
-				if(!list.isEmpty()){
-					treeBean = new TreeBean();
-					treeBean.setT(obj.getClass().getName());
-					treeBean.setL(list);
-				}
+				treeBean = new TreeBean();
+				treeBean.setT(obj.getClass().getName());
+				treeBean.setL(list);
 			}
 		}
 		return treeBean;
@@ -426,7 +424,7 @@ class TransformArrayHandle extends TransformHandle{
 		if(tree!=null){
 			String type = tree.getT();
 			List<TreeBean> list = tree.getL();
-			if(list!=null && !list.isEmpty()){
+			if(list!=null){
 				Class<?> classType=Class.forName(type);
 				Class<?> classItem = classType.getComponentType();
 				Object array = Array.newInstance(classItem, list.size());
@@ -465,17 +463,15 @@ class TransformListHandle extends TransformHandle{
 		TreeBean treeBean = null;
 		if(obj!=null){
 			List<?> list=(List<?>)obj;
-			if(!list.isEmpty()){
-				List<TreeBean> treeBeanList = new ArrayList<TreeBean>();
-				for (Object item : list) {
-					TreeBean treeBeanItem = this.getTransformAdapter().objectToTreeBean(item);
-					treeBeanList.add(treeBeanItem);
-				}
-				String className = obj.getClass().getName();
-				treeBean = new TreeBean();
-				treeBean.setT(className);
-				treeBean.setL(treeBeanList);
+			List<TreeBean> treeBeanList = new ArrayList<TreeBean>();
+			for (Object item : list) {
+				TreeBean treeBeanItem = this.getTransformAdapter().objectToTreeBean(item);
+				treeBeanList.add(treeBeanItem);
 			}
+			String className = obj.getClass().getName();
+			treeBean = new TreeBean();
+			treeBean.setT(className);
+			treeBean.setL(treeBeanList);
 		}
 		return treeBean;
 	}
@@ -486,7 +482,7 @@ class TransformListHandle extends TransformHandle{
 		if(tree!=null){
 			String type = tree.getT();
 			List<TreeBean> treeBeanList = tree.getL();
-			if(treeBeanList!=null && !treeBeanList.isEmpty()){
+			if(treeBeanList!=null){
 				Class<?> classType=Class.forName(type);
 				Object object = classType.newInstance();
 				@SuppressWarnings("unchecked")
@@ -537,7 +533,7 @@ class TransformMapHandle extends TransformHandle{
 					valueMap.put(jObjK, jObjV);
 				}
 			}
-			if(valueMap!=null && !valueMap.isEmpty()){
+			if(valueMap!=null){
 				result = new TreeBean();
 				result.setT(obj.getClass().getName());
 				result.setM(valueMap);
@@ -574,6 +570,66 @@ class TransformMapHandle extends TransformHandle{
 		return result;
 	}
 	
+}
+
+
+/**
+ * 枚举类型
+ *
+ */
+class TransformEnumHandle extends TransformHandle{
+
+	@Override
+	public boolean isTransformClass(String classValue) throws Exception {
+		boolean flag = false;
+		if(StringUtils.isNotBlank(classValue)){
+			Class<?> classT=Class.forName(classValue);
+			if(classT.isEnum()){
+				flag = true;
+			}
+		}
+		return flag;
+	}
+
+	@Override
+	protected TreeBean objectToTreeBeanTransform(Object obj) throws Exception {
+		TreeBean treeBean = null;
+		if(obj!=null){
+			String value = obj.toString();
+			treeBean = new TreeBean();
+			treeBean.setT(obj.getClass().getName());
+			treeBean.setV(value);
+		}
+		return treeBean;
+	}
+
+	@Override
+	protected Object treeBeanToObjectTransform(TreeBean tree) throws Exception {
+		Object result = null;
+		if(tree!=null){
+			String type = tree.getT();
+			String value = tree.getV();
+			Class<?> classType = Class.forName(type);
+			Enum<?>[] enumArray = (Enum<?>[])classType.getEnumConstants();
+			Enum<?> enumValue = this.getEnum(enumArray, value);
+			result = enumValue;
+		}
+		return result;
+	}
+
+	private Enum<?> getEnum(Enum<?>[] enumArray, String name) {
+		Enum<?> value = null;
+		if(enumArray!=null && enumArray.length>0){
+			for (Enum<?> enumItem : enumArray) {
+				String nameItem = enumItem.name();
+				if(nameItem.equals(name)){
+					value = enumItem;
+					break;
+				}
+			}
+		}
+		return value;
+	}
 }
 
 
@@ -750,10 +806,12 @@ class TransformAdapterFactory{
 		TransformArrayHandle transformArrayHandle = new TransformArrayHandle();
 		TransformListHandle transformListHandle = new TransformListHandle();
 		TransformMapHandle transformMapHandle = new TransformMapHandle();
+		TransformEnumHandle transformEnumHandle = new TransformEnumHandle();
 		handleList.add(transformBaseClassHandle);
 		handleList.add(transformArrayHandle);
 		handleList.add(transformListHandle);
 		handleList.add(transformMapHandle);
+		handleList.add(transformEnumHandle);
 		TransformModelHandle transformModelHandle = new TransformModelHandle();
 		TransformAdapter transformAdapter = new TransformAdapter(handleList, transformModelHandle);
 		TransformAdapterFactory.transformAdapter = transformAdapter;
@@ -800,10 +858,10 @@ class TreeBean{
 			treeBean = new TreeBean();
 			treeBean.setT(t);
 			treeBean.setV(v);
-			if(l!=null && l.size()>0){
+			if(l!=null){
 				treeBean.setL(TreeBean.getTreeBeanList(l));
 			}
-			if(m!=null && m.size()>0){
+			if(m!=null){
 				treeBean.setM(TreeBean.getTreeBeanMap(m));
 			}
 		}
@@ -812,7 +870,7 @@ class TreeBean{
 	
 	private static List<TreeBean> getTreeBeanList(JSONArray l){
 		List<TreeBean> list = null;
-		if(l!=null && l.size()>0){
+		if(l!=null){
 			list = new ArrayList<TreeBean>();
 			for (int i = 0; i < l.size(); i++) {
 				JSONObject obj = l.getJSONObject(i);
@@ -825,7 +883,7 @@ class TreeBean{
 	
 	private static Map<TreeBean,TreeBean> getTreeBeanMap(JSONObject m){
 		Map<TreeBean,TreeBean> map = null;
-		if(m!=null && m.size()>0){
+		if(m!=null){
 			map = new HashMap<TreeBean, TreeBean>();
 			Iterator<String> it = m.keySet().iterator();
 			while(it.hasNext()){

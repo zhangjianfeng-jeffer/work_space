@@ -11,8 +11,37 @@ import com.yolo.common.utils.json.ObjectStringUtils;
 public class ObjectStringUtilsTest {
 
 	public static void main(String[] args) throws Exception{
-		test2();
+		test3();
 	}
+
+	private static void test3()throws Exception{
+		MyTest a = new MyTest();
+		a.setId(1L);
+		a.setName("sdsddddddsdsdsdsdsdsdertgrt");
+		List<MyTest> list = new ArrayList<MyTest>();
+		a.setUserList(list);
+		a.setMyTestMap(new HashMap<String, MyTest>());
+
+		MyTest b = new MyTest();
+		b.setId(2L);
+		b.setName("bbbbbbbbb");
+		b.setSuccess(true);
+		b.setOk(false);
+		b.setMyTestEnum(MyTestEnum.TEST_TWO);
+		b.setArray(new MyTest[0]);
+		list.add(null);
+		list.add(b);
+		list.add(null);
+
+
+		String json = ObjectStringUtils.objectTransformString(a);
+		System.out.println("json=="+json);
+		MyTest r = ObjectStringUtils.stringTransformObject(json);
+
+		System.out.println(" r=="+ r);
+
+	}
+
 
 	private static void test2()throws Exception{
 		Map<MyTest,MyTest> map =new HashMap<MyTest, MyTest>();
@@ -23,12 +52,14 @@ public class ObjectStringUtilsTest {
 		a.setOk(true);
 		a.setAddress(true);
 		a.setResult(true);
+		a.setMyTestEnum(MyTestEnum.TEST_ONE);
 
 		MyTest b = new MyTest();
 		b.setId(2L);
 		b.setName("bbbbbbbbb");
 		b.setSuccess(true);
 		b.setOk(false);
+		b.setMyTestEnum(MyTestEnum.TEST_TWO);
 
 		MyTest c = new MyTest();
 		c.setId(3L);
@@ -41,6 +72,26 @@ public class ObjectStringUtilsTest {
 
 		map.put(a,b);
 		map.put(c,d);
+
+
+		MyTest e = new MyTest();
+		e.setId(5L);
+		e.setName("eeeeeeeeeeeeeee");
+		e.setSuccess(false);
+
+		MyTest f = new MyTest();
+		f.setId(4L);
+		f.setName("ffffffffffff");
+		f.setSuccess(false);
+
+		MyTest[] array = new MyTest[2];
+		array[0] = e;
+		array[1] = f;
+
+		d.setArray(array);
+
+
+
 
 		String json = ObjectStringUtils.objectTransformString(map);
 		System.out.println("json======"+json);
