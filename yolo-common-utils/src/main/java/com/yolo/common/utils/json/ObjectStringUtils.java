@@ -484,7 +484,12 @@ class TransformListHandle extends TransformHandle{
 			List<TreeBean> treeBeanList = tree.getL();
 			if(treeBeanList!=null){
 				Class<?> classType=Class.forName(type);
-				Object object = classType.newInstance();
+				Object object = null;
+				if(Collections.emptyList().getClass().equals(classType)){
+					object = Collections.emptyList();
+				}else{
+					object = classType.newInstance();
+				}
 				@SuppressWarnings("unchecked")
 				List<Object> list=(List<Object>)object;
 				for (TreeBean treeBeanItem : treeBeanList) {
@@ -550,7 +555,13 @@ class TransformMapHandle extends TransformHandle{
 			Map<TreeBean,TreeBean> valueMap= tree.getM();
 			if(valueMap!=null){
 				Class<?> classType=Class.forName(type);
-				Object object = classType.newInstance();
+				Object object = null;
+				if(Collections.emptyMap().getClass().equals(classType)){
+					object = Collections.emptyMap();
+				}else{
+					object = classType.newInstance();
+				}
+
 				@SuppressWarnings("unchecked")
 				Map<Object,Object> map=(Map<Object,Object>)object;
 				Iterator<TreeBean> it=valueMap.keySet().iterator();
