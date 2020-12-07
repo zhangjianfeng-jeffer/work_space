@@ -107,22 +107,16 @@ public class ObjectStringUtils {
 			treeBeanProess.treeBeanProcess(treeBean, typeDictionary);
 			TreeBean b = treeBean.getB();
 			List<TreeBean> l = treeBean.getL();
-			Map<TreeBean,TreeBean> m = treeBean.getM();
+			TreeBean k = treeBean.getK();
 			if(b!=null){
 				ObjectStringUtils.treeBeanProcess(b, typeDictionary,treeBeanProess);
+			}
+			if(k!=null){
+				ObjectStringUtils.treeBeanProcess(k, typeDictionary,treeBeanProess);
 			}
 			if(l!=null && !l.isEmpty()){
 				for (TreeBean tBean : l) {
 					ObjectStringUtils.treeBeanProcess(tBean, typeDictionary,treeBeanProess);
-				}
-			}
-			if(m!=null && !m.isEmpty()){
-				Iterator<TreeBean> it = m.keySet().iterator();
-				while(it.hasNext()){
-					TreeBean key = it.next();
-					TreeBean value = m.get(key);
-					ObjectStringUtils.treeBeanProcess(key, typeDictionary,treeBeanProess);
-					ObjectStringUtils.treeBeanProcess(value, typeDictionary,treeBeanProess);
 				}
 			}
 		}
@@ -527,7 +521,7 @@ class TransformMapHandle extends TransformHandle{
 		TreeBean result = null;
 		if(obj!=null){
 			Map<?,?> map=(Map<?,?>)obj;
-			Map<TreeBean,TreeBean> valueMap=new HashMap<TreeBean,TreeBean>();
+			List<TreeBean> valueMapList = new ArrayList<TreeBean>();
 			Iterator<?> it=map.keySet().iterator();
 			while (it.hasNext()) {
 				Object key=it.next();
@@ -535,14 +529,16 @@ class TransformMapHandle extends TransformHandle{
 				TreeBean jObjK=this.getTransformAdapter().objectToTreeBean(key);
 				TreeBean jObjV=this.getTransformAdapter().objectToTreeBean(valueObject);
 				if(jObjK!=null){
-					valueMap.put(jObjK, jObjV);
+					TreeBean valueMapItem = new TreeBean();
+					valueMapItem.setK(jObjK);
+					valueMapItem.setB(jObjV);
+					valueMapList.add(valueMapItem);
 				}
 			}
-			if(valueMap!=null){
-				result = new TreeBean();
-				result.setT(obj.getClass().getName());
-				result.setM(valueMap);
-			}
+			result = new TreeBean();
+			result.setT(obj.getClass().getName());
+			result.setL(valueMapList);
+
 		}
 		return result;
 	}
@@ -552,8 +548,8 @@ class TransformMapHandle extends TransformHandle{
 		Object result = null;
 		if(tree!=null){
 			String type = tree.getT();
-			Map<TreeBean,TreeBean> valueMap= tree.getM();
-			if(valueMap!=null){
+			List<TreeBean> valueMapList = tree.getL();
+			if(valueMapList!=null){
 				Class<?> classType=Class.forName(type);
 				Object object = null;
 				if(Collections.emptyMap().getClass().equals(classType)){
@@ -561,13 +557,11 @@ class TransformMapHandle extends TransformHandle{
 				}else{
 					object = classType.newInstance();
 				}
-
 				@SuppressWarnings("unchecked")
 				Map<Object,Object> map=(Map<Object,Object>)object;
-				Iterator<TreeBean> it=valueMap.keySet().iterator();
-				while(it.hasNext()){
-					TreeBean keyItem=it.next();
-					TreeBean valueItem=valueMap.get(keyItem);
+				for (TreeBean valueMapItem:valueMapList) {
+					TreeBean keyItem=valueMapItem.getK();
+					TreeBean valueItem=valueMapItem.getB();
 					Object keyObject = this.getTransformAdapter().treeBeanToObject(keyItem);
 					Object valueObject = this.getTransformAdapter().treeBeanToObject(valueItem);
 					if(keyObject!=null){
@@ -662,7 +656,7 @@ class TransformModelHandle extends TransformHandle{
 	protected TreeBean objectToTreeBeanTransform(Object obj) throws Exception {
 		TreeBean result = null;
 		if(obj!=null){
-			Map<TreeBean,TreeBean> valueMap=new HashMap<TreeBean,TreeBean>();
+			List<TreeBean> valueMapList = new ArrayList<TreeBean>();
 			List<Field> fieldList=ModleClassManager.getFieldListExceptStatic(obj.getClass());
 			if(fieldList!=null && !fieldList.isEmpty()){
 				for (Field field : fieldList) {
@@ -674,18 +668,19 @@ class TransformModelHandle extends TransformHandle{
 							TreeBean nameTreeBean = this.getTransformAdapter().objectToTreeBean(fieldName);
 							TreeBean valueTreeBean = this.getTransformAdapter().objectToTreeBean(fieldValue);
 							if(nameTreeBean!=null && valueTreeBean!=null){
-								valueMap.put(nameTreeBean, valueTreeBean);
+								TreeBean beanItem = new TreeBean();
+								beanItem.setK(nameTreeBean);
+								beanItem.setB(valueTreeBean);
+								valueMapList.add(beanItem);
 							}
 							
 						}
 					}
 				}
 			}
-			if(!valueMap.isEmpty()){
-				result = new TreeBean();
-				result.setT(obj.getClass().getName());
-				result.setM(valueMap);
-			}
+			result = new TreeBean();
+			result.setT(obj.getClass().getName());
+			result.setL(valueMapList);
 		}
 		return result;
 	}
@@ -695,14 +690,13 @@ class TransformModelHandle extends TransformHandle{
 		Object result = null;
 		if(tree!=null){
 			String type = tree.getT();
-			Map<TreeBean,TreeBean> valueMap= tree.getM();
-			if(valueMap!=null){
+			List<TreeBean> valueMapList = tree.getL();
+			if(valueMapList!=null){
 				Class<?> classType=Class.forName(type);
 				Object object = classType.newInstance();
-				Iterator<TreeBean> it=valueMap.keySet().iterator();
-				while(it.hasNext()){
-					TreeBean keyItem=it.next();
-					TreeBean valueItem=valueMap.get(keyItem);
+				for (TreeBean valueMapItem:valueMapList) {
+					TreeBean keyItem=valueMapItem.getK();
+					TreeBean valueItem=valueMapItem.getB();
 					Object keyObject = this.getTransformAdapter().treeBeanToObject(keyItem);
 					Object valueObject = this.getTransformAdapter().treeBeanToObject(valueItem);
 					if(keyObject!=null && valueObject!=null){
@@ -715,7 +709,7 @@ class TransformModelHandle extends TransformHandle{
 								e.printStackTrace();
 								throw e;
 							}
-							
+
 						}
 					}
 				}
@@ -839,7 +833,7 @@ class TreeBean{
 	private String v;
 	private TreeBean b;
 	private List<TreeBean> l;
-	private Map<TreeBean,TreeBean> m;
+	private TreeBean k;
 	
 	
 	public static String treeBeanToString(TreeBean bean){
@@ -864,7 +858,8 @@ class TreeBean{
 			String t=jsonObject.getString("t");
 			String v=jsonObject.getString("v");
 			JSONArray l=jsonObject.getJSONArray("l");
-			JSONObject m=jsonObject.getJSONObject("m");
+			JSONObject b=jsonObject.getJSONObject("b");
+			JSONObject k=jsonObject.getJSONObject("k");
 			
 			treeBean = new TreeBean();
 			treeBean.setT(t);
@@ -872,8 +867,11 @@ class TreeBean{
 			if(l!=null){
 				treeBean.setL(TreeBean.getTreeBeanList(l));
 			}
-			if(m!=null){
-				treeBean.setM(TreeBean.getTreeBeanMap(m));
+			if(k!=null){
+				treeBean.setK(TreeBean.getTreeBeanObject(k));
+			}
+			if(b!=null){
+				treeBean.setB(TreeBean.getTreeBeanObject(b));
 			}
 		}
 		return treeBean;
@@ -936,19 +934,17 @@ class TreeBean{
 	public void setL(List<TreeBean> l) {
 		this.l = l;
 	}
-	public Map<TreeBean, TreeBean> getM() {
-		return m;
+	public TreeBean getK() {
+		return k;
 	}
-	public void setM(Map<TreeBean, TreeBean> m) {
-		this.m = m;
+	public void setK(TreeBean k) {
+		this.k = k;
 	}
 	@Override
 	public String toString() {
-		return "TreeBean [t=" + t + ", v=" + v + ", b=" + b + ", l=" + l
-				+ ", m=" + m + "]";
+		return "TreeBean [t=" + t + ", v=" + v + ", b=" + b + ", l=" + l + "]";
 	}
 }
-
 
 
 
